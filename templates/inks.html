@@ -117,9 +117,12 @@
       </div>
       {% endif %}
       <div class="ink-card-title-block">
-        <h3>{{ ink['name'] }}</h3>
-        <div class="ink-brand">{{ ink['brand'] }}{% if ink['color_name'] %} &middot; {{ ink['color_name'] }}{% endif %}</div>
-        <div class="hex-tag">{{ ink['color_hex']|upper }}</div>
+        {{ ink_bottle(ink['color_hex'], 'ink-card-bottle') }}
+        <div>
+          <h3>{{ ink['name'] }}</h3>
+          <div class="ink-brand">{{ ink['brand'] }}{% if ink['color_name'] %} &middot; {{ ink['color_name'] }}{% endif %}</div>
+          <div class="hex-tag">{{ ink['color_hex']|upper }}</div>
+        </div>
       </div>
     </a>
     <div class="ink-card-body">

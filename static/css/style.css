@@ -763,7 +763,8 @@ h1 .status-badge {
 
 .ink-card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 
-.ink-card-title-block { padding: 14px 18px 0; }
+.ink-card-title-block { padding: 14px 18px 0; display: flex; gap: 12px; align-items: center; }
+.ink-card-title-block .ink-card-bottle { width: 52px; height: 52px; margin-top: 0; }
 
 .ink-card h3 { font-size: 1.05rem; margin-bottom: 0; }
 .ink-card .ink-brand { font-size: 0.85rem; color: var(--text-secondary); }

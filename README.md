@@ -115,6 +115,7 @@ got updated, since nginx serves that file straight from disk. A hard refresh
 - Adding an ink or pen needs the password. Viewing never does. If you want to
   hide the collection too, put nginx basic auth in front of it.
 - It's a single-user app. There are no accounts, just the one editing password.
+- I'm working on a multi-user app version in my spare time. Please bear with me! 
 
 ## License
 

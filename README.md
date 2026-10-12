@@ -65,6 +65,17 @@ To do it by hand:
 
 nginx can't run Python, it just forwards to gunicorn.
 
+## Security notes
+
+- Every form has a CSRF token, login redirects only go to paths on the site,
+  and five wrong passwords from one IP locks that IP out for 15 minutes. The
+  lockout lives in memory per worker, so a restart clears it.
+- Behind nginx, set `PENTRACKER_TRUST_PROXY=1` so the lockout sees real IPs.
+  `setup.sh` does this for you. If you use `.env`, it's in `.env.example`.
+- Once you're on HTTPS, set `PENTRACKER_SECURE_COOKIES=1`.
+- Use a long random password. It's a single shared password with no 2FA.
+- Found a hole? Open an issue, or use GitHub's private security advisory if it's serious.
+
 ## Your data
 
 Two things hold everything: `pentracker.db` and the `static/uploads/` folder.

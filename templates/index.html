@@ -74,7 +74,7 @@
     <div class="pen-card-actions">
       {% if logged_in %}
       <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
-      <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}" style="display:inline;">
+      <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="ink_id" value="">
         <button type="submit" class="btn btn-outline btn-small">Empty pen</button>
       </form>

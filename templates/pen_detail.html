@@ -13,7 +13,7 @@
   {% if logged_in %}
   <div class="row-actions">
     <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline">Edit</a>
-    <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');">
+    <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   </div>
@@ -85,7 +85,7 @@
     <button type="button" class="lightbox-nav lightbox-next" data-lightbox-next aria-label="Next">›</button>
     <div class="lightbox-footer">
       <span class="lightbox-counter" data-lightbox-counter></span>
-      <form method="post" data-lightbox-delete-form hidden onsubmit="return confirm('Remove this photo?');">
+      <form method="post" data-lightbox-delete-form hidden onsubmit="return confirm('Remove this photo?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger btn-small">Remove this photo</button>
       </form>
     </div>

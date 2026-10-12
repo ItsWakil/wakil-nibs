@@ -13,7 +13,7 @@
   {% if logged_in %}
   <div class="row-actions">
     <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline">Edit</a>
-    <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+    <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   </div>

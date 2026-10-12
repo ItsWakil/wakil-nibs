@@ -35,7 +35,7 @@
     <a href="{{ url_for('inks_list') }}" class="{{ 'active' if request.endpoint in ['inks_list','ink_new','ink_edit','ink_detail'] }}">Inks</a>
     <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">🌙</button>
     {% if logged_in %}
-    <form method="post" action="{{ url_for('logout') }}" style="display:inline;">
+    <form method="post" action="{{ url_for('logout') }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="nav-auth-link">Log out</button>
     </form>
     {% else %}

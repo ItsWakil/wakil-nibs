@@ -9,7 +9,7 @@
   </div>
 </div>
 
-<form method="post" class="card form-card" enctype="multipart/form-data">
+<form method="post" class="card form-card" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="field-grid">
     <div class="field-row">
       <label for="name">Ink name</label>

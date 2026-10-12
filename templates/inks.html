@@ -92,7 +92,7 @@
           {% if logged_in %}
           <div class="row-actions">
             <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline btn-small">Edit</a>
-            <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+            <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-danger btn-small">Delete</button>
             </form>
           </div>
@@ -156,7 +156,7 @@
       <div class="ink-card-actions">
         {% if logged_in %}
         <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline btn-small">Edit</a>
-        <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+        <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger btn-small">Delete</button>
         </form>
         {% endif %}

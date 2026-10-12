@@ -10,7 +10,7 @@
   </div>
 </div>
 
-<form method="post" class="card form-card" style="max-width:420px;">
+<form method="post" class="card form-card" style="max-width:420px;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="next" value="{{ next_url }}">
   <div class="field-row">
     <label for="password">Password</label>

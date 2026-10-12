@@ -3,8 +3,11 @@
 Run locally with `python app.py`, then open http://127.0.0.1:5000.
 """
 
+import hmac
 import os
+import secrets
 import sys
+import time
 import uuid
 from pathlib import Path
 from functools import wraps
@@ -19,6 +22,20 @@ app.secret_key = os.environ.get(
     "PENTRACKER_SECRET_KEY",
     "change-this-to-something-random-before-sharing-publicly",
 )
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Set PENTRACKER_SECURE_COOKIES=1 once you're serving over HTTPS.
+    SESSION_COOKIE_SECURE=os.environ.get("PENTRACKER_SECURE_COOKIES") == "1",
+)
+
+# Behind nginx every request looks like it came from 127.0.0.1. Set
+# PENTRACKER_TRUST_PROXY=1 so the real client IP (from X-Forwarded-For) is used
+# for the login lockout. Only do this when a proxy you control is in front.
+if os.environ.get("PENTRACKER_TRUST_PROXY") == "1":
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Editing password. Viewing needs no login.
 ADMIN_PASSWORD_HASH = generate_password_hash(
@@ -102,6 +119,58 @@ def _resolve_image_field(existing_row, field_name, remove_flag_name, file_field_
         current_path = new_path
 
     return current_path
+
+
+def csrf_token():
+    if "_csrf" not in session:
+        session["_csrf"] = secrets.token_hex(16)
+    return session["_csrf"]
+
+
+app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+@app.before_request
+def check_csrf():
+    if request.method == "POST":
+        sent = request.form.get("csrf_token", "")
+        if not hmac.compare_digest(sent, session.get("_csrf", "")):
+            return ("Your session expired or the form was invalid. "
+                    "Go back, reload the page and try again.", 400)
+
+
+@app.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    return resp
+
+
+def safe_next(url):
+    """Only follow redirects to a path on this site."""
+    if url and url.startswith("/") and not url.startswith("//") and "\\" not in url:
+        return url
+    return url_for("dashboard")
+
+
+# Login lockout: 5 bad passwords from one IP locks that IP out for 15 minutes.
+# Kept in memory per worker, so it resets on restart and each gunicorn worker
+# counts separately. Good enough to stop casual guessing.
+FAIL_LIMIT = 5
+LOCKOUT_SECONDS = 15 * 60
+_login_failures = {}
+
+
+def _locked_out(ip):
+    entry = _login_failures.get(ip)
+    if not entry:
+        return False
+    count, first = entry
+    if time.time() - first > LOCKOUT_SECONDS:
+        _login_failures.pop(ip, None)
+        return False
+    return count >= FAIL_LIMIT
 
 
 def login_required(view_func):
@@ -209,14 +278,21 @@ def ensure_db():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        ip = request.remote_addr or "?"
+        if _locked_out(ip):
+            flash("Too many wrong passwords. Try again in a few minutes.", "error")
+            return render_template("login.html", next_url=""), 429
         submitted = request.form.get("password", "")
         if check_password_hash(ADMIN_PASSWORD_HASH, submitted):
+            _login_failures.pop(ip, None)
+            session.clear()
             session["logged_in"] = True
             flash("Logged in.", "success")
-            next_url = request.form.get("next") or url_for("dashboard")
-            return redirect(next_url)
+            return redirect(safe_next(request.form.get("next")))
+        count, first = _login_failures.get(ip, (0, time.time()))
+        _login_failures[ip] = (count + 1, first)
         flash("Wrong password.", "error")
-    next_url = request.args.get("next", "")
+    next_url = safe_next(request.args.get("next")) if request.args.get("next") else ""
     return render_template("login.html", next_url=next_url)
 
 

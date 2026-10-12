@@ -102,6 +102,7 @@ WorkingDirectory=$PROJECT_DIR
 Environment="PATH=$PROJECT_DIR/venv/bin"
 Environment="PENTRACKER_PASSWORD=$PENTRACKER_PASSWORD"
 Environment="PENTRACKER_SECRET_KEY=$SECRET_KEY"
+Environment="PENTRACKER_TRUST_PROXY=1"
 ExecStart=$PROJECT_DIR/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:$GUNICORN_PORT app:app
 Restart=always
 

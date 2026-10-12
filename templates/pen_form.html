@@ -22,7 +22,7 @@
       {% else %}
       <img src="{{ url_for('static', filename=image['image_path']) }}" class="gallery-manage-media" alt="Pen photo">
       {% endif %}
-      <form method="post" action="{{ url_for('pen_image_delete', pen_id=pen['id'], image_id=image['id']) }}" onsubmit="return confirm('Remove this photo?');">
+      <form method="post" action="{{ url_for('pen_image_delete', pen_id=pen['id'], image_id=image['id']) }}" onsubmit="return confirm('Remove this photo?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="gallery-delete-btn" title="Remove this photo">×</button>
       </form>
     </div>
@@ -32,7 +32,7 @@
 </div>
 {% endif %}
 
-<form method="post" class="card form-card" enctype="multipart/form-data">
+<form method="post" class="card form-card" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="field-row">
     <label for="name">Pen name</label>
     <input type="text" id="name" name="name" required placeholder="e.g. Metropolitan"

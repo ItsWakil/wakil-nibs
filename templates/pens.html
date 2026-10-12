@@ -62,7 +62,7 @@
         <td>{{ pen['nib_material'] or '—' }}</td>
         <td>
           {% if logged_in %}
-          <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}">
+          <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <select name="ink_id" class="inline-select" onchange="this.form.submit()">
               <option value="">— empty —</option>
               {% for ink in inks %}
@@ -103,7 +103,7 @@
           {% if logged_in %}
           <div class="row-actions">
             <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
-            <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');">
+            <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-danger btn-small">Delete</button>
             </form>
           </div>
@@ -152,7 +152,7 @@
     <div class="pen-card-actions">
       {% if logged_in %}
       <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
-      <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');" style="margin-left:auto;">
+      <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');" style="margin-left:auto;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger btn-small">Delete</button>
       </form>
       {% endif %}

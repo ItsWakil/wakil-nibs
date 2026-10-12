@@ -1,13 +1,6 @@
-"""
-app.py
-------
-Wakil Nibs - a small Flask app for tracking fountain pens and inks.
+"""Wakil Nibs: a small Flask app for tracking fountain pens and inks.
 
-Run it locally with:
-    python app.py
-then visit http://127.0.0.1:5000
-
-See README.md for how to serve this behind nginx.
+Run locally with `python app.py`, then open http://127.0.0.1:5000.
 """
 
 import os
@@ -21,24 +14,18 @@ import database as db
 
 app = Flask(__name__)
 
-# Used to sign session cookies. Change this before sharing the app publicly --
-# see README.md for how to generate a random one and set it as an
-# environment variable instead of leaving it in the code.
+# Signs session cookies. Set PENTRACKER_SECRET_KEY, don't rely on the default.
 app.secret_key = os.environ.get(
     "PENTRACKER_SECRET_KEY",
     "change-this-to-something-random-before-sharing-publicly",
 )
 
-# The password needed to add/edit/delete pens and inks. Anyone without it
-# can still view everything -- they just can't change anything.
-# Set this via an environment variable rather than hardcoding it here.
-# See README.md for how.
+# Editing password. Viewing needs no login.
 ADMIN_PASSWORD_HASH = generate_password_hash(
     os.environ.get("PENTRACKER_PASSWORD", "changeme")
 )
 
-# Nudge anyone who forgot to set these. The defaults are public (they're in
-# the source), so a site left on them is not really protected.
+# The defaults are in the source, so warn if they're still in use.
 if "PENTRACKER_PASSWORD" not in os.environ:
     print("WARNING: PENTRACKER_PASSWORD is not set; the editing password is "
           "'changeme'. Set it before exposing this to anyone.", file=sys.stderr)
@@ -47,7 +34,7 @@ if "PENTRACKER_SECRET_KEY" not in os.environ:
           "with a publicly known key. Set it before exposing this to anyone.",
           file=sys.stderr)
 
-# --- Uploads: handwriting samples, item photos, and pen photo galleries --
+# Uploads
 STATIC_DIR = Path(__file__).parent / "static"
 PEN_SAMPLE_DIR = STATIC_DIR / "uploads" / "pens"
 INK_SAMPLE_DIR = STATIC_DIR / "uploads" / "inks"
@@ -56,8 +43,7 @@ INK_PHOTO_DIR = STATIC_DIR / "uploads" / "ink_photos"
 ALLOWED_UPLOAD_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "webm"}
 VIDEO_EXTENSIONS = {"webm"}
 
-# Reject uploads bigger than 25 MB outright (Flask returns a 413 error page).
-# Raised from the original 8 MB now that short .webm clips are allowed.
+# 25 MB upload cap (Flask returns a 413).
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
 
@@ -132,8 +118,7 @@ def login_required(view_func):
 
 @app.context_processor
 def inject_logged_in():
-    # Makes `logged_in` available in every template automatically, so we
-    # can show/hide Add/Edit/Delete buttons without passing it everywhere.
+    # `logged_in` in every template
     return dict(logged_in=session.get("logged_in", False))
 
 
@@ -189,9 +174,7 @@ NIB_SIZES = ["EF", "F", "M", "B", "BB", "Stub", "Italic", "Flex", "Music", "Othe
 NIB_MATERIALS = ["Steel", "Gold", "Titanium", "Palladium", "Bronze", "Other"]
 INK_TYPES = ["Dye", "Pigment", "Iron Gall", "Bulletproof", "Other"]
 
-# Status flags. "active" is the default/normal state and is the only one
-# intentionally left out of list-view badges elsewhere, to keep the common
-# case visually quiet -- only the exceptions (sold, loaned, etc.) stand out.
+# Status flags. "active" gets no badge; only the exceptions do.
 PEN_STATUSES = [
     ("active", "Active"),
     ("loaned", "Loaned Out"),
@@ -210,22 +193,18 @@ INK_STATUS_LABELS = dict(INK_STATUSES)
 
 @app.context_processor
 def inject_status_labels():
-    # Lets templates turn a stored status value (e.g. "loaned") into its
-    # display label (e.g. "Loaned Out") without passing it through every view.
+    # status value -> display label, for templates
     return dict(pen_status_labels=PEN_STATUS_LABELS, ink_status_labels=INK_STATUS_LABELS)
 
 
 @app.before_request
 def ensure_db():
-    # Cheap safety net: make sure tables (and any new columns) exist even
-    # if init/migrate wasn't run manually.
+    # make sure tables and new columns exist
     db.init_db()
     db.migrate_db()
 
 
-# ---------------------------------------------------------------------
 # Login / logout
-# ---------------------------------------------------------------------
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -248,9 +227,7 @@ def logout():
     return redirect(url_for("dashboard"))
 
 
-# ---------------------------------------------------------------------
 # Dashboard
-# ---------------------------------------------------------------------
 
 @app.route("/")
 def dashboard():
@@ -272,9 +249,7 @@ def dashboard():
     )
 
 
-# ---------------------------------------------------------------------
 # Pens
-# ---------------------------------------------------------------------
 
 @app.route("/pens")
 def pens_list():
@@ -350,8 +325,7 @@ def pen_delete(pen_id):
     pen = db.get_pen(pen_id)
     if pen:
         _delete_upload(pen["handwriting_sample_path"])
-        # Delete every gallery file from disk before the pen (and its
-        # pen_images rows, via cascade) disappear from the database.
+        # remove gallery files from disk first; rows go by cascade
         for image in db.get_pen_images(pen_id):
             _delete_upload(image["image_path"])
     db.delete_pen(pen_id)
@@ -402,18 +376,14 @@ def _save_pen_form(pen_id=None):
     else:
         db.update_pen(pen_id, data)
 
-    # Pens can have several photos/videos at once, so this uses getlist()
-    # instead of get() -- the <input multiple> field sends one entry per
-    # file the person selected, and each becomes its own pen_images row.
+    # getlist(): the multiple-file input sends one entry per file
     for uploaded_file in request.files.getlist("pen_photos"):
         new_path = _save_upload(uploaded_file, PEN_PHOTO_DIR, "pen_photos", "Pen photo/video")
         if new_path:
             db.add_pen_image(pen_id, new_path)
 
 
-# ---------------------------------------------------------------------
 # Inks
-# ---------------------------------------------------------------------
 
 @app.route("/inks")
 def inks_list():

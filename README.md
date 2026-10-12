@@ -1,124 +1,75 @@
 # Wakil Nibs
 
-A small self-hosted web app for keeping track of your fountain pens and inks.
+Self-hosted tracker for fountain pens and inks. Flask and SQLite, one editing
+password, no accounts. Anyone can browse the collection; only you can change it.
 
-I built it because a spreadsheet kept losing the plot. I wanted to see what's
-inked right now, what each bottle looks like, how much everything cost, and
-have a place for photos and handwriting samples. It runs on a Flask app and a
-single SQLite file, so there's no database server to babysit.
+You get a dashboard of what's inked right now, detail pages with photos and
+handwriting samples, a value and status for every pen and ink (loaned, being
+serviced, sold, empty and so on), running totals for pens, ink and mL on hand,
+and light and dark themes. Inks show up as little bottles in the ink's color.
 
-Anyone can look at your collection. Only you (with a password) can change it.
+## Try it
 
-## What it does
-
-- Pens and inks, each with a detail page, photos and notes
-- A dashboard of what's inked right now, with totals for pens, ink, the whole
-  collection, and how many mL of ink you have on hand
-- A value field on everything, and status flags (pens can be loaned out, being
-  serviced, broken or sold; inks can be sold or empty)
-- Ink bottle icons that take on the color of the ink
-- Multiple photos per pen, plus a handwriting sample for each pen and ink
-- List and grid views, sortable by almost anything
-- Light and dark themes
-
-## Try it on your own machine
-
-You need Python 3.8 or newer.
+Python 3.8 or newer.
 
 ```bash
 git clone https://github.com/ItsWakil/wakil-nibs.git
 cd wakil-nibs
 python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 export PENTRACKER_PASSWORD="pick-something"
-export PENTRACKER_SECRET_KEY="any-long-random-string"
+export PENTRACKER_SECRET_KEY="a-long-random-string"
 python app.py
 ```
 
-Open http://127.0.0.1:5000. The first run creates `pentracker.db` and adds one
-sample pen and ink so the pages aren't empty. Delete them once you've added
-your own. Click **Log in** in the top bar to unlock the add and edit buttons.
+Then go to http://127.0.0.1:5000. First run creates `pentracker.db` with one
+sample pen and ink. Delete them when you've added your own, and use **Log in**
+in the top bar to get the add/edit buttons.
 
-If you skip the two `export` lines the app still starts, but it will complain
-and fall back to a password of `changeme`. Fine for a quick look, not fine for
-anything other people can reach.
+If you leave out the two `export` lines the app still runs, but it warns you
+and the password is `changeme`.
 
-That `python app.py` server is for trying things out. For real use, run it
-with gunicorn as described below.
+`python app.py` is the debug server. Don't leave it running for real.
 
-## Running it for real
+## Running it on a server
 
-This is aimed at a Linux box that stays on, like a home server or a small VPS.
-There are two ways to set it up.
+Easiest is `bash setup.sh`. It sets up the venv, asks for a password, makes a
+secret key, and can install a systemd service and write an nginx config for
+you to look over. It doesn't touch your nginx setup itself.
 
-### The quick way
+To do it by hand:
 
-```bash
-bash setup.sh
-```
-
-It makes the virtual environment, asks you for a password, generates a secret
-key, and offers to install a systemd service. It can also write an nginx config
-for you to review. It never touches your nginx setup on its own.
-
-### The manual way
-
-1. Do the steps from "Try it on your own machine" above, but skip `python app.py`.
-2. Copy `.env.example` to `.env` and fill in the password and secret key.
+1. Install as above, skip `python app.py`.
+2. `cp .env.example .env` and fill in the password and secret key.
 3. Copy `deploy/wakil-nibs.service.example` to `/etc/systemd/system/wakil-nibs.service`
-   and fix the paths and username.
-4. Start it:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now wakil-nibs
-   sudo systemctl status wakil-nibs
-   ```
-5. It's now listening on `127.0.0.1:8000`. To put it on a domain, use
-   `deploy/nginx.conf.example` as a starting point and add HTTPS with
-   [certbot](https://certbot.eff.org/). Without HTTPS, your password crosses
-   the network in plain text when you log in.
+   and fix the paths and user.
+4. `sudo systemctl daemon-reload && sudo systemctl enable --now wakil-nibs`
+5. It listens on `127.0.0.1:8000`. Put nginx in front (`deploy/nginx.conf.example`
+   is a starting point) and get a certificate with certbot. Without HTTPS the
+   password goes over the wire in plain text.
 
-nginx can't run Python by itself. It sits in front and hands requests to
-gunicorn, which is the thing actually running the app.
+nginx can't run Python, it just forwards to gunicorn.
 
 ## Your data
 
-Everything you enter lives in two places:
-
-- `pentracker.db`, one SQLite file
-- `static/uploads/`, where photos and handwriting samples go
-
-Back those up together by copying them somewhere. To restore, put them back
-in a fresh install. Both are in `.gitignore`, so they won't end up in git.
+Two things hold everything: `pentracker.db` and the `static/uploads/` folder.
+Copy both to back up. Neither is tracked by git.
 
 ## Updating
 
-Pull the new code (or copy the new files over), leave `pentracker.db` and
-`static/uploads/` alone, then restart:
+Pull or copy the new code over, don't touch the database or uploads, and restart
+the service. Gunicorn caches templates, so a restart is needed for any change.
+If the page comes up unstyled, `static/css/style.css` didn't get copied (nginx
+serves it straight from disk).
 
-```bash
-sudo systemctl restart wakil-nibs
-```
+## Odds and ends
 
-Gunicorn caches templates, so a restart is needed after any change. If the
-styling looks broken afterward, make sure `static/css/style.css` actually
-got updated, since nginx serves that file straight from disk. A hard refresh
-(Ctrl+Shift+R) rules out the browser cache.
+- Settings are still named `PENTRACKER_*` and the database is `pentracker.db`,
+  from before the app had a name. Renaming them would break existing installs.
+- Want the collection private too? Put nginx basic auth in front.
 
-## A few notes
-
-- The setting names still start with `PENTRACKER_` and the database is still
-  called `pentracker.db`. That's from before the app had a name. I left them
-  alone so existing installs keep working.
-- Adding an ink or pen needs the password. Viewing never does. If you want to
-  hide the collection too, put nginx basic auth in front of it.
-- It's a single-user app. There are no accounts, just the one editing password.
-
-## License
-
-MIT. See [LICENSE](LICENSE). Do what you like with it, including forking it
-for your own collection.
+MIT licensed, see [LICENSE](LICENSE).
 
 Made by [Wakil](https://wakil.ink) · [GitHub](https://github.com/ItsWakil)

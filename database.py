@@ -1,13 +1,4 @@
-"""
-database.py
-------------
-All the SQLite plumbing for Wakil Nibs.
-
-We use Python's built-in `sqlite3` module (no extra install needed) and
-store everything in a single file, `pentracker.db`, that sits next to
-this script. Rows are returned as dictionaries (via `sqlite3.Row`) so
-templates can do things like `pen['name']` instead of `pen[0]`.
-"""
+"""SQLite layer for Wakil Nibs. Everything lives in pentracker.db next to this file."""
 
 import sqlite3
 from pathlib import Path

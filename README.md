@@ -8,6 +8,19 @@ handwriting samples, a value and status for every pen and ink (loaned, being
 serviced, sold, empty and so on), running totals for pens, ink and mL on hand,
 and light and dark themes. Inks show up as little bottles in the ink's color.
 
+![Dashboard, light theme](docs/screenshots/dashboard-light.png)
+
+<details>
+<summary>More screenshots</summary>
+
+![Dashboard, dark theme](docs/screenshots/dashboard-dark.png)
+![Pens list](docs/screenshots/pens-list.png)
+![Inks grid](docs/screenshots/inks-grid.png)
+
+</details>
+
+(Sample data, not a real collection.)
+
 ## Try it
 
 Python 3.8 or newer.

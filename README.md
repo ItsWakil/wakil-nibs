@@ -2,6 +2,7 @@
 
 Self-hosted tracker for fountain pens and inks. Flask and SQLite, one editing
 password, no accounts. Anyone can browse the collection; only you can change it.
+I made this because I found existing options to be either ugly or lacking in features or expensive. 
 
 You get a dashboard of what's inked right now, detail pages with photos and
 handwriting samples, a value and status for every pen and ink (loaned, being
@@ -93,6 +94,9 @@ serves it straight from disk).
 - Settings are still named `PENTRACKER_*` and the database is `pentracker.db`,
   from before the app had a name. Renaming them would break existing installs.
 - Want the collection private too? Put nginx basic auth in front.
+
+## Future
+I'm working on a version of this for multiple users and multiple collections in my spare time while working and going to school full time. Bear with me. 
 
 MIT licensed, see [LICENSE](LICENSE).
 

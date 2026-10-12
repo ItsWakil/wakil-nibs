@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Wakil Nibs{% endblock %}</title>
+
+<script>
+  // Runs immediately, before any CSS paints, so returning visitors don't
+  // see a flash of the wrong theme. Falls back to the OS-level light/dark
+  // preference on a first visit; otherwise the CSS defaults to dark.
+  (function () {
+    var saved = localStorage.getItem('pentracker-theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version() }}">
+</head>
+<body>
+
+<div class="floating-header">
+  <a href="{{ url_for('dashboard') }}" class="header-pill header-pill-brand">Wakil Nibs</a>
+
+  <nav class="header-pill header-pill-nav">
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+    <a href="{{ url_for('pens_list') }}" class="{{ 'active' if request.endpoint in ['pens_list','pen_new','pen_edit','pen_detail'] }}">Pens</a>
+    <a href="{{ url_for('inks_list') }}" class="{{ 'active' if request.endpoint in ['inks_list','ink_new','ink_edit','ink_detail'] }}">Inks</a>
+    <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">🌙</button>
+    {% if logged_in %}
+    <form method="post" action="{{ url_for('logout') }}" style="display:inline;">
+      <button type="submit" class="nav-auth-link">Log out</button>
+    </form>
+    {% else %}
+    <a href="{{ url_for('login') }}" class="nav-highlight">Log in</a>
+    {% endif %}
+  </nav>
+</div>
+
+<main class="page-content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <span>&copy; <a href="https://wakil.ink" target="_blank" rel="noopener">Wakil</a> 2026</span>
+  <span class="site-footer-sep">·</span>
+  <span>Powered by <a href="https://github.com/ItsWakil" target="_blank" rel="noopener">Wakil Nibs</a></span>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('theme-toggle-btn');
+    if (!btn) return;
+
+    function currentTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+    function paintIcon() {
+      btn.textContent = currentTheme() === 'light' ? '☀' : '🌙';
+    }
+
+    paintIcon();
+    btn.addEventListener('click', function () {
+      var next = currentTheme() === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('pentracker-theme', next);
+      paintIcon();
+    });
+  })();
+</script>
+
+</body>
+</html>

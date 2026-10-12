@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit pen' if pen else 'Add a pen' }} · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{{ 'Editing' if pen else 'New entry' }}</span>
+    <h1>{{ 'Edit ' + pen['name'] if pen else 'Add a pen' }}</h1>
+  </div>
+</div>
+
+{% if pen and images %}
+<div class="card form-card" style="margin-bottom:20px;">
+  <label style="margin-bottom:12px;">Current photos</label>
+  <div class="gallery-manage">
+    {% for image in images %}
+    <div class="gallery-manage-item">
+      {% if image['image_path']|is_video %}
+      <video class="gallery-manage-media" muted>
+        <source src="{{ url_for('static', filename=image['image_path']) }}">
+      </video>
+      {% else %}
+      <img src="{{ url_for('static', filename=image['image_path']) }}" class="gallery-manage-media" alt="Pen photo">
+      {% endif %}
+      <form method="post" action="{{ url_for('pen_image_delete', pen_id=pen['id'], image_id=image['id']) }}" onsubmit="return confirm('Remove this photo?');">
+        <button type="submit" class="gallery-delete-btn" title="Remove this photo">×</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="field-hint">Click × to remove a photo. To add more, use the field below and save the form.</p>
+</div>
+{% endif %}
+
+<form method="post" class="card form-card" enctype="multipart/form-data">
+  <div class="field-row">
+    <label for="name">Pen name</label>
+    <input type="text" id="name" name="name" required placeholder="e.g. Metropolitan"
+           value="{{ pen['name'] if pen else '' }}">
+  </div>
+
+  <div class="field-row">
+    <label for="brand">Brand</label>
+    <input type="text" id="brand" name="brand" placeholder="e.g. Pilot"
+           value="{{ pen['brand'] if pen else '' }}">
+  </div>
+
+  <div class="field-row">
+    <label for="description">Description <span class="optional">(optional)</span></label>
+    <textarea id="description" name="description" placeholder="Appearance, material, what drew you to it...">{{ pen['description'] if pen else '' }}</textarea>
+  </div>
+
+  <div class="field-grid">
+    <div class="field-row">
+      <label for="nib_size">Nib size</label>
+      <select id="nib_size" name="nib_size">
+        <option value="">— select —</option>
+        {% for size in nib_sizes %}
+        <option value="{{ size }}" {{ 'selected' if pen and pen['nib_size'] == size }}>{{ size }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="nib_material">Nib material</label>
+      <select id="nib_material" name="nib_material">
+        <option value="">— select —</option>
+        {% for mat in nib_materials %}
+        <option value="{{ mat }}" {{ 'selected' if pen and pen['nib_material'] == mat }}>{{ mat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label for="current_ink_id">Currently inked with <span class="optional">(optional)</span></label>
+    <select id="current_ink_id" name="current_ink_id">
+      <option value="">— empty / not inked —</option>
+      {% for ink in inks %}
+      <option value="{{ ink['id'] }}" {{ 'selected' if pen and pen['current_ink_id'] == ink['id'] }}>
+        {{ ink['brand'] }} {{ ink['name'] }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field-row">
+    <label for="model_url">Link to pen model <span class="optional">(optional)</span></label>
+    <input type="url" id="model_url" name="model_url" placeholder="https://..."
+           value="{{ pen['model_url'] if pen else '' }}">
+  </div>
+
+  <div class="field-row">
+    <label for="date_acquired">Date acquired <span class="optional">(optional)</span></label>
+    <input type="date" id="date_acquired" name="date_acquired"
+           value="{{ pen['date_acquired'] if pen else '' }}">
+  </div>
+
+  <div class="field-grid">
+    <div class="field-row">
+      <label for="value">Value <span class="optional">(optional)</span></label>
+      <input type="number" step="0.01" min="0" id="value" name="value" placeholder="e.g. 150.00"
+             value="{{ pen['value'] if pen and pen['value'] is not none else '' }}">
+    </div>
+    <div class="field-row">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for value, label in pen_statuses %}
+        <option value="{{ value }}" {{ 'selected' if pen and pen['status'] == value or (not pen and value == 'active') }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label for="pen_photos">Add photos &amp; videos of the pen <span class="optional">(optional)</span></label>
+    <input type="file" id="pen_photos" name="pen_photos" accept=".png,.jpg,.jpeg,.gif,.webp,.webm" multiple>
+    <p class="field-hint">PNG, JPG, GIF, WEBP, or WEBM (short video clips). Select several files at once to add them all.</p>
+  </div>
+
+  <div class="field-row">
+    <label for="handwriting_sample">Handwriting sample <span class="optional">(optional)</span></label>
+    {% if pen and pen['handwriting_sample_path'] %}
+    <div class="current-sample">
+      {% if pen['handwriting_sample_path']|is_video %}
+      <video class="current-sample-media" controls>
+        <source src="{{ url_for('static', filename=pen['handwriting_sample_path']) }}">
+      </video>
+      {% else %}
+      <img src="{{ url_for('static', filename=pen['handwriting_sample_path']) }}" alt="Current handwriting sample">
+      {% endif %}
+      <div class="checkbox-item">
+        <input type="checkbox" id="remove_sample" name="remove_sample">
+        <label for="remove_sample">Remove current sample</label>
+      </div>
+    </div>
+    {% endif %}
+    <input type="file" id="handwriting_sample" name="handwriting_sample" accept=".png,.jpg,.jpeg,.gif,.webp,.webm">
+    <p class="field-hint">PNG, JPG, GIF, WEBP, or WEBM. Uploading a new file replaces the current one.</p>
+  </div>
+
+  <div class="field-row">
+    <label for="notes">Notes <span class="optional">(optional)</span></label>
+    <textarea id="notes" name="notes" placeholder="Writing feel, quirks, maintenance history...">{{ pen['notes'] if pen else '' }}</textarea>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">{{ 'Save changes' if pen else 'Add pen' }}</button>
+    <a href="{{ url_for('pens_list') }}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+{% endblock %}

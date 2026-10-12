@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ pen['name'] }} · Wakil Nibs{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('pens_list') }}" class="back-link">← Back to Pens</a>
+
+<div class="page-head">
+  <div>
+    {% if pen['brand'] %}<span class="pen-brand-tag">{{ pen['brand'] }}</span>{% endif %}
+    <h1>{{ pen['name'] }}{% if pen['status'] != 'active' %} {{ status_badge(pen['status'], pen_status_labels) }}{% endif %}</h1>
+  </div>
+  {% if logged_in %}
+  <div class="row-actions">
+    <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline">Edit</a>
+    <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div id="gallery" class="detail-section" style="margin-top:0;">
+  <h2>Gallery</h2>
+  <div class="media-tile-row" data-media-gallery>
+    {% if images %}
+    <button type="button" class="media-tile" data-open-lightbox data-group="photos" data-index="0" aria-label="View pen photo full size">
+      {% if images[0]['image_path']|is_video %}
+      <video class="media-tile-media" muted preload="metadata" playsinline><source src="{{ url_for('static', filename=images[0]['image_path']) }}"></video>
+      <span class="media-tile-play">▶</span>
+      {% else %}
+      <img class="media-tile-media" src="{{ url_for('static', filename=images[0]['image_path']) }}" alt="{{ pen['name'] }} photo">
+      {% endif %}
+      {% if images|length > 1 %}<span class="media-tile-badge">{{ images|length }} photos</span>{% endif %}
+      <span class="media-tile-overlay">View pen full size</span>
+    </button>
+    {% else %}
+    <div class="media-tile media-tile-empty"><span class="detail-photo-placeholder">No Photos Yet</span></div>
+    {% endif %}
+
+    {% if pen['handwriting_sample_path'] %}
+    <button type="button" class="media-tile" data-open-lightbox data-group="sample" data-index="0" aria-label="View handwriting sample full size">
+      {% if pen['handwriting_sample_path']|is_video %}
+      <video class="media-tile-media" muted preload="metadata" playsinline><source src="{{ url_for('static', filename=pen['handwriting_sample_path']) }}"></video>
+      <span class="media-tile-play">▶</span>
+      {% else %}
+      <img class="media-tile-media" src="{{ url_for('static', filename=pen['handwriting_sample_path']) }}" alt="Handwriting sample">
+      {% endif %}
+      <span class="media-tile-overlay">View writing sample</span>
+    </button>
+    {% else %}
+    <div class="media-tile media-tile-empty"><span class="detail-photo-placeholder">No Sample Yet</span></div>
+    {% endif %}
+  </div>
+
+  {# Hidden data sources the lightbox script reads from -- keeps the full
+     photo list (and delete URLs) available even though only one tile
+     per group is shown above. #}
+  <div hidden data-lightbox-source="photos">
+    {% for image in images %}
+    <div data-item
+         data-src="{{ url_for('static', filename=image['image_path']) }}"
+         data-type="{{ 'video' if image['image_path']|is_video else 'image' }}"
+         data-delete-url="{{ url_for('pen_image_delete', pen_id=pen['id'], image_id=image['id']) if logged_in else '' }}"
+         data-label="Pen photo {{ loop.index }} of {{ images|length }}"></div>
+    {% endfor %}
+  </div>
+  <div hidden data-lightbox-source="sample">
+    {% if pen['handwriting_sample_path'] %}
+    <div data-item
+         data-src="{{ url_for('static', filename=pen['handwriting_sample_path']) }}"
+         data-type="{{ 'video' if pen['handwriting_sample_path']|is_video else 'image' }}"
+         data-delete-url=""
+         data-label="Handwriting sample"></div>
+    {% endif %}
+  </div>
+
+  <div class="lightbox" data-lightbox hidden>
+    <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close">×</button>
+    <button type="button" class="lightbox-nav lightbox-prev" data-lightbox-prev aria-label="Previous">‹</button>
+    <div class="lightbox-stage">
+      <img class="lightbox-media" data-lightbox-img hidden alt="{{ pen['name'] }} photo">
+      <video class="lightbox-media" data-lightbox-video controls hidden><source data-lightbox-video-src></video>
+    </div>
+    <button type="button" class="lightbox-nav lightbox-next" data-lightbox-next aria-label="Next">›</button>
+    <div class="lightbox-footer">
+      <span class="lightbox-counter" data-lightbox-counter></span>
+      <form method="post" data-lightbox-delete-form hidden onsubmit="return confirm('Remove this photo?');">
+        <button type="submit" class="btn btn-danger btn-small">Remove this photo</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var root = document.querySelector('[data-media-gallery]');
+    if (!root) return;
+
+    function readGroup(name) {
+      var source = document.querySelector('[data-lightbox-source="' + name + '"]');
+      if (!source) return [];
+      return Array.prototype.slice.call(source.querySelectorAll('[data-item]')).map(function (el) {
+        return {
+          src: el.getAttribute('data-src'),
+          type: el.getAttribute('data-type'),
+          deleteUrl: el.getAttribute('data-delete-url') || '',
+          label: el.getAttribute('data-label') || ''
+        };
+      });
+    }
+
+    var groups = { photos: readGroup('photos'), sample: readGroup('sample') };
+    var activeItems = [];
+    var current = 0;
+
+    var lightbox = document.querySelector('[data-lightbox]');
+    var lbImg = lightbox.querySelector('[data-lightbox-img]');
+    var lbVideo = lightbox.querySelector('[data-lightbox-video]');
+    var lbVideoSrc = lightbox.querySelector('[data-lightbox-video-src]');
+    var lbCounter = lightbox.querySelector('[data-lightbox-counter]');
+    var lbPrev = lightbox.querySelector('[data-lightbox-prev]');
+    var lbNext = lightbox.querySelector('[data-lightbox-next]');
+    var lbDeleteForm = lightbox.querySelector('[data-lightbox-delete-form]');
+
+    function render(index) {
+      var item = activeItems[index];
+      if (!item) return;
+      current = index;
+      try { lbVideo.pause(); } catch (e) {}
+      if (item.type === 'video') {
+        lbVideoSrc.setAttribute('src', item.src);
+        lbVideo.load();
+        lbVideo.removeAttribute('hidden');
+        lbImg.setAttribute('hidden', '');
+      } else {
+        lbImg.setAttribute('src', item.src);
+        lbImg.setAttribute('alt', item.label);
+        lbImg.removeAttribute('hidden');
+        lbVideo.setAttribute('hidden', '');
+      }
+      var multi = activeItems.length > 1;
+      lbPrev.hidden = !multi;
+      lbNext.hidden = !multi;
+      lbCounter.textContent = multi ? (index + 1) + ' / ' + activeItems.length : item.label;
+      if (item.deleteUrl) {
+        lbDeleteForm.setAttribute('action', item.deleteUrl);
+        lbDeleteForm.hidden = false;
+      } else {
+        lbDeleteForm.hidden = true;
+      }
+    }
+
+    function open(groupName, index) {
+      activeItems = groups[groupName] || [];
+      if (activeItems.length === 0) return;
+      render(index || 0);
+      lightbox.removeAttribute('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      try { lbVideo.pause(); } catch (e) {}
+      lightbox.setAttribute('hidden', '');
+      document.body.style.overflow = '';
+    }
+
+    function step(delta) {
+      render((current + delta + activeItems.length) % activeItems.length);
+    }
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-open-lightbox]'), function (tile) {
+      tile.addEventListener('click', function () {
+        open(tile.getAttribute('data-group'), parseInt(tile.getAttribute('data-index'), 10) || 0);
+      });
+    });
+
+    lightbox.querySelector('[data-lightbox-close]').addEventListener('click', close);
+    lbPrev.addEventListener('click', function () { step(-1); });
+    lbNext.addEventListener('click', function () { step(1); });
+    lightbox.addEventListener('click', function (e) { if (e.target === lightbox) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (lightbox.hasAttribute('hidden')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') step(-1);
+      if (e.key === 'ArrowRight') step(1);
+    });
+  })();
+  </script>
+</div>
+
+<div class="detail-columns detail-columns-single">
+  <div>
+    <dl class="detail-facts">
+      <dt>Nib size</dt>
+      <dd>{{ pen['nib_size'] or '—' }}</dd>
+
+      <dt>Nib material</dt>
+      <dd>{{ pen['nib_material'] or '—' }}</dd>
+
+      <dt>Currently inked</dt>
+      <dd>
+        {% if ink %}
+        <a href="{{ url_for('ink_detail', ink_id=ink['id']) }}" class="sample-link">{{ ink['brand'] }} {{ ink['name'] }}</a>
+        {% else %}
+        <span style="color:var(--text-secondary);">Not inked</span>
+        {% endif %}
+      </dd>
+
+      <dt>Date acquired</dt>
+      <dd>{{ pen['date_acquired'] or '—' }}</dd>
+
+      <dt>Value</dt>
+      <dd>{{ pen['value']|money }}</dd>
+
+      <dt>Status</dt>
+      <dd>{{ status_badge(pen['status'], pen_status_labels) }}</dd>
+
+      <dt>Model link</dt>
+      <dd>
+        {% if pen['model_url'] %}
+        <a href="{{ pen['model_url'] }}" target="_blank" rel="noopener" class="sample-link">View model ↗</a>
+        {% else %}
+        —
+        {% endif %}
+      </dd>
+    </dl>
+
+    {% if pen['description'] %}
+    <div class="detail-section">
+      <h2>Description</h2>
+      <p>{{ pen['description'] }}</p>
+    </div>
+    {% endif %}
+
+    {% if pen['notes'] %}
+    <div class="detail-section">
+      <h2>Notes</h2>
+      <p>{{ pen['notes'] }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

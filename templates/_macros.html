@@ -1,0 +1,41 @@
+{#
+  _macros.html
+  ------------
+  Small Jinja macros shared by the Pens and Inks pages:
+    - sort_link: a "click to sort" column header/pill
+    - view_toggle: the Grid / List switcher
+    - status_badge: the colored Active/Loaned/Sold/etc. pill
+    - ink_bottle: the ink-colored bottle icon (replaces the old round swatch)
+
+  Usage:
+    {% from "_macros.html" import sort_link, view_toggle, status_badge %}
+    {{ sort_link('Brand', 'brand', current_sort, current_dir, current_view, base_url) }}
+    {{ view_toggle(current_view, base_url, current_sort, current_dir) }}
+    {{ status_badge(pen['status'], pen_status_labels) }}
+#}
+{% macro sort_link(label, key, current_sort, current_dir, current_view, base_url) %}
+{% set is_active = current_sort == key %}
+{% set next_dir = 'desc' if (is_active and current_dir == 'asc') else 'asc' %}
+<a href="{{ base_url }}?sort={{ key }}&dir={{ next_dir }}&view={{ current_view }}" class="sort-link{{ ' sort-link-active' if is_active }}">
+  {{ label }}{% if is_active %}<span class="sort-arrow">{{ '▲' if current_dir == 'asc' else '▼' }}</span>{% endif %}
+</a>
+{%- endmacro %}
+
+{% macro view_toggle(current_view, base_url, current_sort, current_dir) %}
+{% set sort_qs = ('&sort=' + current_sort + '&dir=' + current_dir) if current_sort else '' %}
+<div class="view-toggle">
+  <a href="{{ base_url }}?view=list{{ sort_qs }}" class="view-toggle-btn{{ ' view-toggle-active' if current_view == 'list' }}">☰ List</a>
+  <a href="{{ base_url }}?view=grid{{ sort_qs }}" class="view-toggle-btn{{ ' view-toggle-active' if current_view == 'grid' }}">▦ Grid</a>
+</div>
+{%- endmacro %}
+
+{% macro status_badge(status, labels) %}
+<span class="status-badge status-badge-{{ status }}">{{ labels.get(status, status) }}</span>
+{%- endmacro %}
+
+{# Clear ink bottle filled with the ink's color. Glass/cap colors come from
+   --bottle-* CSS variables so the icon adapts to light/dark themes.
+   cls: extra classes, e.g. 'large'. Pass hex=None for an empty/unknown bottle. #}
+{% macro ink_bottle(hex, cls='') -%}
+<span class="ink-swatch{{ ' ' ~ cls if cls }}" aria-hidden="true"><svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">{% if hex %}<path d="M61 114 C61 106 63 102 68 100 L188 100 C193 102 195 106 195 114 V210 C195 216 190 222 182 222 H74 C66 222 61 216 61 210 Z" fill="{{ hex }}"/>{% endif %}<path d="M91 57 V72 C91 78 87 81 80 84 L63 91 C55 94 50 102 50 112 V211 C50 224 60 233 73 233 H183 C196 233 206 224 206 211 V112 C206 102 201 94 193 91 L176 84 C169 81 165 78 165 72 V57" stroke="var(--bottle-outline)" stroke-width="8" stroke-linejoin="round"/><path d="M94 67 V76 C94 86 88 91 79 95 L68 100 C63 102 61 106 61 114 V210 C61 216 66 222 74 222 H182 C190 222 195 216 195 210 V114 C195 106 193 102 188 100 L177 95 C168 91 162 86 162 76 V67" stroke="var(--bottle-rim)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M72 115 V195" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".55"/><rect x="79" y="28" width="98" height="42" rx="9" fill="var(--bottle-cap)" stroke="var(--bottle-cap-edge)" stroke-width="6"/></svg></span>
+{%- endmacro %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ink_bottle %}
+{% block title %}Dashboard · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+  </div>
+  <div>
+    {% if logged_in %}
+    <a href="{{ url_for('pen_new') }}" class="btn btn-primary">+ Add a pen</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="stat-strip">
+  <a href="{{ url_for('pens_list') }}" class="stat-card">
+    <span class="stat-number">{{ pen_count }}</span>
+    <span class="stat-label">Pens in collection</span>
+  </a>
+  <a href="{{ url_for('pens_list') }}" class="stat-card alt">
+    <span class="stat-number">{{ inked_pens|length }}</span>
+    <span class="stat-label">Currently inked</span>
+  </a>
+  <a href="{{ url_for('inks_list') }}" class="stat-card">
+    <span class="stat-number">{{ ink_count }}</span>
+    <span class="stat-label">Inks in collection</span>
+  </a>
+</div>
+
+<div class="value-summary">
+  <span>Pens worth <strong>{{ pen_value_total|money }}</strong></span>
+  <span class="value-summary-divider">·</span>
+  <span>Ink worth <strong>{{ ink_value_total|money }}</strong></span>
+  <span class="value-summary-divider">·</span>
+  <span>Collection worth <strong>{{ collection_value_total|money }}</strong></span>
+  <span class="value-summary-divider">·</span>
+  <span>Ink on hand <strong>{{ '{:,.0f}'.format(ink_ml_total) }} mL</strong></span>
+</div>
+
+<span class="eyebrow">Currently on the desk</span>
+
+{% if inked_pens %}
+<div class="pen-grid">
+  {% for pen in inked_pens %}
+  <div class="card pen-card">
+    <div class="pen-card-top">
+      {{ ink_bottle(pen['ink_color_hex'], 'large') }}
+      <div>
+        {% if pen['brand'] %}<span class="pen-brand-tag">{{ pen['brand'] }}</span>{% endif %}
+        <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}" class="pen-card-title-link"><h3>{{ pen['name'] }}</h3></a>
+      </div>
+    </div>
+    <div class="ink-line">
+      Inked with <strong>{{ pen['ink_brand'] }} {{ pen['ink_name'] }}</strong>
+    </div>
+    <div class="badge-row">
+      {% if pen['nib_size'] %}<span class="badge badge-b">{{ pen['nib_size'] }} nib</span>{% endif %}
+      {% if pen['nib_material'] %}<span class="badge">{{ pen['nib_material'] }}</span>{% endif %}
+    </div>
+    <div class="sample-link-row">
+      {% if pen['image_count'] %}
+      <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}#gallery" class="sample-link">{{ pen['image_count'] }} Photo{{ 's' if pen['image_count'] != 1 }} ↗</a>
+      {% else %}
+      <span class="sample-link-empty">No Photos Yet</span>
+      {% endif %}
+      {% if pen['handwriting_sample_path'] %}
+      <a href="{{ url_for('static', filename=pen['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Handwriting Sample ↗</a>
+      {% else %}
+      <span class="sample-link-empty">No Sample Yet</span>
+      {% endif %}
+    </div>
+    <div class="pen-card-actions">
+      {% if logged_in %}
+      <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
+      <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}" style="display:inline;">
+        <input type="hidden" name="ink_id" value="">
+        <button type="submit" class="btn btn-outline btn-small">Empty pen</button>
+      </form>
+      {% endif %}
+      {% if pen['model_url'] %}
+      <a href="{{ pen['model_url'] }}" target="_blank" rel="noopener" class="btn btn-small" style="margin-left:auto;color:var(--accent);">Model ↗</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+  <h3>No pens are inked up right now</h3>
+  <p>Add a pen and load it with an ink to see it show up here.</p>
+  <a href="{{ url_for('pen_new') }}" class="btn btn-primary">Add your first pen</a>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, ink_bottle %}
+{% block title %}{{ ink['name'] }} · Wakil Nibs{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('inks_list') }}" class="back-link">← Back to Inks</a>
+
+<div class="page-head">
+  <div>
+    <span class="pen-brand-tag">{{ ink['brand'] }}</span>
+    <h1>{{ ink['name'] }}{% if ink['status'] != 'active' %} {{ status_badge(ink['status'], ink_status_labels) }}{% endif %}</h1>
+  </div>
+  {% if logged_in %}
+  <div class="row-actions">
+    <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline">Edit</a>
+    <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="detail-columns">
+  <div>
+    <div class="detail-photo-wrap">
+      {% if ink['photo_path'] %}
+        {% if ink['photo_path']|is_video %}
+        <video class="gallery-media" controls>
+          <source src="{{ url_for('static', filename=ink['photo_path']) }}">
+        </video>
+        {% else %}
+        <img src="{{ url_for('static', filename=ink['photo_path']) }}" alt="{{ ink['name'] }}">
+        {% endif %}
+      {% else %}
+      {{ ink_bottle(ink['color_hex'], 'large') }}
+      {% endif %}
+    </div>
+    <div class="hex-tag" style="text-align:center; margin-top:8px;">{{ ink['color_hex']|upper }}{% if ink['color_name'] %} &middot; {{ ink['color_name'] }}{% endif %}</div>
+
+    <div class="detail-photo-wrap detail-photo-wrap-secondary">
+      {% if ink['handwriting_sample_path'] %}
+        {% if ink['handwriting_sample_path']|is_video %}
+        <video class="gallery-media" controls>
+          <source src="{{ url_for('static', filename=ink['handwriting_sample_path']) }}">
+        </video>
+        {% else %}
+        <img src="{{ url_for('static', filename=ink['handwriting_sample_path']) }}" alt="Handwriting sample">
+        {% endif %}
+      {% else %}
+      <span class="detail-photo-placeholder">No Sample Yet</span>
+      {% endif %}
+    </div>
+    {% if ink['handwriting_sample_path'] %}
+    <a href="{{ url_for('static', filename=ink['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Open full-size sample ↗</a>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="badge-row" style="margin-bottom: 18px;">
+      <span class="badge">{{ ink['ink_type'] }}</span>
+      {% if ink['sheen'] %}<span class="badge badge-a">Sheen</span>{% endif %}
+      {% if ink['shimmer'] %}<span class="badge badge-c">Shimmer</span>{% endif %}
+      {% if ink['shading'] %}<span class="badge badge-b">Shading</span>{% endif %}
+    </div>
+
+    <dl class="detail-facts">
+      <dt>Bottle size</dt>
+      <dd>{{ ink['bottle_size_ml']|trim_zero + ' mL' if ink['bottle_size_ml'] else '—' }}</dd>
+
+      <dt>Value</dt>
+      <dd>{{ ink['value']|money }}</dd>
+
+      <dt>Status</dt>
+      <dd>{{ status_badge(ink['status'], ink_status_labels) }}</dd>
+
+      <dt>Ink link</dt>
+      <dd>
+        {% if ink['ink_url'] %}
+        <a href="{{ ink['ink_url'] }}" target="_blank" rel="noopener" class="sample-link">View ↗</a>
+        {% else %}
+        —
+        {% endif %}
+      </dd>
+    </dl>
+
+    {% if ink['notes'] %}
+    <div class="detail-section">
+      <h2>Notes</h2>
+      <p>{{ ink['notes'] }}</p>
+    </div>
+    {% endif %}
+
+    <div class="detail-section">
+      <h2>Currently inked in</h2>
+      {% if pens_using %}
+      <div class="empty-pen-list">
+        {% for pen in pens_using %}
+        <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}" class="empty-pen-chip" style="text-decoration:none;">
+          {% if pen['brand'] %}{{ pen['brand'] }} {% endif %}{{ pen['name'] }}
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:var(--text-secondary);">Not currently loaded in any pen.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

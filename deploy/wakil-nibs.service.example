@@ -1,0 +1,15 @@
+# Copy to /etc/systemd/system/wakil-nibs.service and replace the placeholders.
+# Put your password and secret key in /path/to/wakil-nibs/.env (see .env.example).
+[Unit]
+Description=Wakil Nibs
+After=network.target
+
+[Service]
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/wakil-nibs
+EnvironmentFile=/path/to/wakil-nibs/.env
+ExecStart=/path/to/wakil-nibs/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

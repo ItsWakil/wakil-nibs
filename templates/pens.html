@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_link, view_toggle, status_badge, ink_bottle %}
+{% block title %}Pens · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">The collection</span>
+    <h1>Pens</h1>
+    <p class="subtitle">All your pens. Click a column heading to sort, or click a pen to see its full details.</p>
+  </div>
+  {% if logged_in %}
+  <a href="{{ url_for('pen_new') }}" class="btn btn-primary">+ Add a pen</a>
+  {% endif %}
+</div>
+
+<div class="toolbar-row">
+  <div class="sort-bar">
+    <span class="sort-bar-label">Sort by:</span>
+    {{ sort_link('Name', 'name', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Brand', 'brand', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Nib', 'nib_size', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Material', 'nib_material', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Inked with', 'ink', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Value', 'value', current_sort, current_dir, current_view, url_for('pens_list')) }}
+    {{ sort_link('Status', 'status', current_sort, current_dir, current_view, url_for('pens_list')) }}
+  </div>
+  {{ view_toggle(current_view, url_for('pens_list'), current_sort, current_dir) }}
+</div>
+
+{% if pens %}
+
+{% if current_view == 'list' %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Pen</th>
+        <th>Nib</th>
+        <th>Material</th>
+        <th>Inked with</th>
+        <th>Value</th>
+        <th>Status</th>
+        <th>Photos</th>
+        <th>Sample</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pen in pens %}
+      <tr>
+        <td>
+          <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}" class="pen-name-cell pen-name-link">
+            {{ ink_bottle(pen['ink_color_hex']) }}
+            <div>
+              {% if pen['brand'] %}<span class="pen-brand-tag">{{ pen['brand'] }}</span>{% endif %}
+              <span class="pen-name-text">{{ pen['name'] }}</span>
+            </div>
+          </a>
+        </td>
+        <td>{{ pen['nib_size'] or '—' }}</td>
+        <td>{{ pen['nib_material'] or '—' }}</td>
+        <td>
+          {% if logged_in %}
+          <form method="post" action="{{ url_for('pen_ink', pen_id=pen['id']) }}">
+            <select name="ink_id" class="inline-select" onchange="this.form.submit()">
+              <option value="">— empty —</option>
+              {% for ink in inks %}
+              <option value="{{ ink['id'] }}" {{ 'selected' if pen['current_ink_id'] == ink['id'] }}>
+                {{ ink['brand'] }} {{ ink['name'] }}
+              </option>
+              {% endfor %}
+            </select>
+          </form>
+          {% else %}
+            {% if pen['ink_name'] %}{{ pen['ink_brand'] }} {{ pen['ink_name'] }}{% else %}<span style="color:var(--text-secondary);">— empty —</span>{% endif %}
+          {% endif %}
+        </td>
+        <td><span class="value-tag">{{ pen['value']|money }}</span></td>
+        <td>{{ status_badge(pen['status'], pen_status_labels) }}</td>
+        <td>
+          {% if pen['image_count'] %}
+          <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}#gallery" class="thumb-link">
+            {% if pen['first_image_path']|is_video %}
+            <span class="table-thumb table-thumb-video">▶</span>
+            {% else %}
+            <img src="{{ url_for('static', filename=pen['first_image_path']) }}" alt="{{ pen['name'] }} photo" class="table-thumb">
+            {% endif %}
+            {% if pen['image_count'] > 1 %}<span class="thumb-count">+{{ pen['image_count'] - 1 }}</span>{% endif %}
+          </a>
+          {% else %}
+          <span class="sample-link-empty">No Photos Yet</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if pen['handwriting_sample_path'] %}
+          <a href="{{ url_for('static', filename=pen['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Handwriting Sample ↗</a>
+          {% else %}
+          <span class="sample-link-empty">No Sample Yet</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if logged_in %}
+          <div class="row-actions">
+            <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
+            <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');">
+              <button type="submit" class="btn btn-danger btn-small">Delete</button>
+            </form>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="pen-grid">
+  {% for pen in pens %}
+  <div class="card pen-card">
+    <div class="pen-card-top">
+      {{ ink_bottle(pen['ink_color_hex'] or '#3a3a5c', 'large') }}
+      <div>
+        {% if pen['brand'] %}<span class="pen-brand-tag">{{ pen['brand'] }}</span>{% endif %}
+        <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}" class="pen-card-title-link"><h3>{{ pen['name'] }}</h3></a>
+      </div>
+    </div>
+    {% if pen['ink_name'] %}
+    <div class="ink-line">Inked with <strong>{{ pen['ink_brand'] }} {{ pen['ink_name'] }}</strong></div>
+    {% else %}
+    <div class="ink-line" style="color:var(--text-secondary);">Not currently inked</div>
+    {% endif %}
+    <div class="badge-row">
+      {% if pen['nib_size'] %}<span class="badge badge-b">{{ pen['nib_size'] }} nib</span>{% endif %}
+      {% if pen['nib_material'] %}<span class="badge">{{ pen['nib_material'] }}</span>{% endif %}
+      {% if pen['status'] != 'active' %}{{ status_badge(pen['status'], pen_status_labels) }}{% endif %}
+    </div>
+    <div class="sample-link-row">
+      {% if pen['image_count'] %}
+      <a href="{{ url_for('pen_detail', pen_id=pen['id']) }}#gallery" class="sample-link">{{ pen['image_count'] }} Photo{{ 's' if pen['image_count'] != 1 }} ↗</a>
+      {% else %}
+      <span class="sample-link-empty">No Photos Yet</span>
+      {% endif %}
+      {% if pen['handwriting_sample_path'] %}
+      <a href="{{ url_for('static', filename=pen['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Handwriting Sample ↗</a>
+      {% else %}
+      <span class="sample-link-empty">No Sample Yet</span>
+      {% endif %}
+      {% if pen['value'] is not none %}<span class="value-tag">{{ pen['value']|money }}</span>{% endif %}
+    </div>
+    <div class="pen-card-actions">
+      {% if logged_in %}
+      <a href="{{ url_for('pen_edit', pen_id=pen['id']) }}" class="btn btn-outline btn-small">Edit</a>
+      <form method="post" action="{{ url_for('pen_delete', pen_id=pen['id']) }}" onsubmit="return confirm('Remove {{ pen['name'] }} from your collection?');" style="margin-left:auto;">
+        <button type="submit" class="btn btn-danger btn-small">Delete</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+  <h3>Your pen collection is empty</h3>
+  <p>Add your first pen to start tracking it.</p>
+  {% if logged_in %}
+  <a href="{{ url_for('pen_new') }}" class="btn btn-primary">Add a pen</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_link, view_toggle, status_badge, ink_bottle %}
+{% block title %}Inks · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">The bottles</span>
+    <h1>Inks</h1>
+    <p class="subtitle">Color, character, and the details that matter when you're choosing a fill. Click a bottle to see its full details.</p>
+  </div>
+  {% if logged_in %}
+  <a href="{{ url_for('ink_new') }}" class="btn btn-primary">+ Add an ink</a>
+  {% endif %}
+</div>
+
+<div class="toolbar-row">
+  <div class="sort-bar">
+    <span class="sort-bar-label">Sort by:</span>
+    {{ sort_link('Name', 'name', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Brand', 'brand', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Color', 'color', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Type', 'type', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Bottle size', 'bottle_size', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Value', 'value', current_sort, current_dir, current_view, url_for('inks_list')) }}
+    {{ sort_link('Status', 'status', current_sort, current_dir, current_view, url_for('inks_list')) }}
+  </div>
+  {{ view_toggle(current_view, url_for('inks_list'), current_sort, current_dir) }}
+</div>
+
+{% if inks %}
+
+{% if current_view == 'list' %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ink</th>
+        <th>Type</th>
+        <th>Bottle</th>
+        <th>Properties</th>
+        <th>Value</th>
+        <th>Status</th>
+        <th>Photo</th>
+        <th>Sample</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ink in inks %}
+      <tr>
+        <td>
+          <a href="{{ url_for('ink_detail', ink_id=ink['id']) }}" class="pen-name-cell pen-name-link">
+            {{ ink_bottle(ink['color_hex']) }}
+            <div>
+              <span class="pen-brand-tag">{{ ink['brand'] }}</span>
+              <span class="pen-name-text">{{ ink['name'] }}</span>
+            </div>
+          </a>
+        </td>
+        <td>{{ ink['ink_type'] }}</td>
+        <td>{{ ink['bottle_size_ml']|trim_zero + ' mL' if ink['bottle_size_ml'] else '—' }}</td>
+        <td>
+          <div class="badge-row">
+            {% if ink['sheen'] %}<span class="badge badge-a">Sheen</span>{% endif %}
+            {% if ink['shimmer'] %}<span class="badge badge-c">Shimmer</span>{% endif %}
+            {% if ink['shading'] %}<span class="badge badge-b">Shading</span>{% endif %}
+            {% if not ink['sheen'] and not ink['shimmer'] and not ink['shading'] %}<span style="color:var(--text-secondary);">—</span>{% endif %}
+          </div>
+        </td>
+        <td><span class="value-tag">{{ ink['value']|money }}</span></td>
+        <td>{{ status_badge(ink['status'], ink_status_labels) }}</td>
+        <td>
+          {% if ink['photo_path'] %}
+            {% if ink['photo_path']|is_video %}
+            <a href="{{ url_for('static', filename=ink['photo_path']) }}" target="_blank" rel="noopener" class="thumb-link"><span class="table-thumb table-thumb-video">▶</span></a>
+            {% else %}
+            <a href="{{ url_for('static', filename=ink['photo_path']) }}" target="_blank" rel="noopener" class="thumb-link"><img src="{{ url_for('static', filename=ink['photo_path']) }}" alt="{{ ink['name'] }} photo" class="table-thumb"></a>
+            {% endif %}
+          {% else %}
+          <span class="sample-link-empty">No Photo Yet</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if ink['handwriting_sample_path'] %}
+          <a href="{{ url_for('static', filename=ink['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Sample ↗</a>
+          {% else %}
+          <span class="sample-link-empty">No Sample Yet</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if logged_in %}
+          <div class="row-actions">
+            <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline btn-small">Edit</a>
+            <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+              <button type="submit" class="btn btn-danger btn-small">Delete</button>
+            </form>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="ink-grid">
+  {% for ink in inks %}
+  <div class="card ink-card">
+    <a href="{{ url_for('ink_detail', ink_id=ink['id']) }}" class="ink-card-top-link">
+      {% if ink['photo_path'] and not (ink['photo_path']|is_video) %}
+      <div class="ink-card-swatch ink-card-photo" style="background-image:url('{{ url_for('static', filename=ink['photo_path']) }}');"></div>
+      {% else %}
+      <div class="ink-card-swatch" style="background:{{ ink['color_hex'] }};">
+        {% if ink['photo_path'] %}<span class="table-thumb-video ink-card-video-badge">▶ video</span>{% endif %}
+      </div>
+      {% endif %}
+      <div class="ink-card-title-block">
+        <h3>{{ ink['name'] }}</h3>
+        <div class="ink-brand">{{ ink['brand'] }}{% if ink['color_name'] %} &middot; {{ ink['color_name'] }}{% endif %}</div>
+        <div class="hex-tag">{{ ink['color_hex']|upper }}</div>
+      </div>
+    </a>
+    <div class="ink-card-body">
+      <div class="badge-row">
+        <span class="badge">{{ ink['ink_type'] }}</span>
+        {% if ink['sheen'] %}<span class="badge badge-a">Sheen</span>{% endif %}
+        {% if ink['shimmer'] %}<span class="badge badge-c">Shimmer</span>{% endif %}
+        {% if ink['shading'] %}<span class="badge badge-b">Shading</span>{% endif %}
+        {% if ink['status'] != 'active' %}{{ status_badge(ink['status'], ink_status_labels) }}{% endif %}
+      </div>
+
+      <div class="ink-meta">
+        {% if ink['bottle_size_ml'] %}<span>Bottle: {{ ink['bottle_size_ml']|trim_zero }} mL</span>{% endif %}
+        {% if ink['value'] is not none %}<span>Value: {{ ink['value']|money }}</span>{% endif %}
+        {% if ink['notes'] %}<span>{{ ink['notes'] }}</span>{% endif %}
+      </div>
+
+      <div class="sample-link-row">
+        {% if ink['photo_path'] %}
+        <a href="{{ url_for('static', filename=ink['photo_path']) }}" target="_blank" rel="noopener" class="sample-link">Photo ↗</a>
+        {% else %}
+        <span class="sample-link-empty">No Photo Yet</span>
+        {% endif %}
+        {% if ink['handwriting_sample_path'] %}
+        <a href="{{ url_for('static', filename=ink['handwriting_sample_path']) }}" target="_blank" rel="noopener" class="sample-link">Handwriting Sample ↗</a>
+        {% else %}
+        <span class="sample-link-empty">No Sample Yet</span>
+        {% endif %}
+      </div>
+
+      <div class="ink-card-actions">
+        {% if logged_in %}
+        <a href="{{ url_for('ink_edit', ink_id=ink['id']) }}" class="btn btn-outline btn-small">Edit</a>
+        <form method="post" action="{{ url_for('ink_delete', ink_id=ink['id']) }}" onsubmit="return confirm('Remove {{ ink['name'] }} from your collection?');">
+          <button type="submit" class="btn btn-danger btn-small">Delete</button>
+        </form>
+        {% endif %}
+        {% if ink['ink_url'] %}
+        <a href="{{ ink['ink_url'] }}" target="_blank" rel="noopener" class="btn btn-small" style="margin-left:auto; color:var(--accent);">View ↗</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+  <h3>Your ink collection is empty</h3>
+  <p>Add your first bottle to start tracking it.</p>
+  {% if logged_in %}
+  <a href="{{ url_for('ink_new') }}" class="btn btn-primary">Add an ink</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit ink' if ink else 'Add an ink' }} · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{{ 'Editing' if ink else 'New entry' }}</span>
+    <h1>{{ 'Edit ' + ink['name'] if ink else 'Add an ink' }}</h1>
+  </div>
+</div>
+
+<form method="post" class="card form-card" enctype="multipart/form-data">
+  <div class="field-grid">
+    <div class="field-row">
+      <label for="name">Ink name</label>
+      <input type="text" id="name" name="name" required placeholder="e.g. Troublemaker Sriracha"
+             value="{{ ink['name'] if ink else '' }}">
+    </div>
+    <div class="field-row">
+      <label for="brand">Brand</label>
+      <input type="text" id="brand" name="brand" required placeholder="e.g. Diamine"
+             value="{{ ink['brand'] if ink else '' }}">
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label for="color_hex">Color</label>
+    <div class="color-field-row">
+      <input type="color" id="color_hex" name="color_hex" value="{{ ink['color_hex'] if ink else '#22223B' }}">
+      <input type="text" id="color_name" name="color_name" placeholder="Color name, e.g. Brick Red"
+             value="{{ ink['color_name'] if ink else '' }}">
+    </div>
+  </div>
+
+  <div class="field-grid">
+    <div class="field-row">
+      <label for="ink_type">Ink type</label>
+      <select id="ink_type" name="ink_type">
+        {% for type in ink_types %}
+        <option value="{{ type }}" {{ 'selected' if ink and ink['ink_type'] == type }}>{{ type }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="bottle_size_ml">Bottle size (mL) <span class="optional">(optional)</span></label>
+      <input type="number" step="0.1" min="0" id="bottle_size_ml" name="bottle_size_ml" placeholder="e.g. 50"
+             value="{{ ink['bottle_size_ml'] if ink and ink['bottle_size_ml'] is not none else '' }}">
+    </div>
+  </div>
+
+  <div class="field-grid">
+    <div class="field-row">
+      <label for="value">Value <span class="optional">(optional)</span></label>
+      <input type="number" step="0.01" min="0" id="value" name="value" placeholder="e.g. 18.00"
+             value="{{ ink['value'] if ink and ink['value'] is not none else '' }}">
+    </div>
+    <div class="field-row">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for value, label in ink_statuses %}
+        <option value="{{ value }}" {{ 'selected' if ink and ink['status'] == value or (not ink and value == 'active') }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label>Properties</label>
+    <div class="checkbox-group">
+      <div class="checkbox-item">
+        <input type="checkbox" id="sheen" name="sheen" {{ 'checked' if ink and ink['sheen'] }}>
+        <label for="sheen">Sheen</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="shimmer" name="shimmer" {{ 'checked' if ink and ink['shimmer'] }}>
+        <label for="shimmer">Shimmer</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="shading" name="shading" {{ 'checked' if ink and ink['shading'] }}>
+        <label for="shading">Shading</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label for="ink_url">Link to ink <span class="optional">(optional)</span></label>
+    <input type="url" id="ink_url" name="ink_url" placeholder="https://..."
+           value="{{ ink['ink_url'] if ink else '' }}">
+  </div>
+
+  <div class="field-row">
+    <label for="ink_photo">Photo of the bottle <span class="optional">(optional)</span></label>
+    {% if ink and ink['photo_path'] %}
+    <div class="current-sample">
+      {% if ink['photo_path']|is_video %}
+      <video class="current-sample-media" controls>
+        <source src="{{ url_for('static', filename=ink['photo_path']) }}">
+      </video>
+      {% else %}
+      <img src="{{ url_for('static', filename=ink['photo_path']) }}" alt="Current bottle photo">
+      {% endif %}
+      <div class="checkbox-item">
+        <input type="checkbox" id="remove_photo" name="remove_photo">
+        <label for="remove_photo">Remove current photo</label>
+      </div>
+    </div>
+    {% endif %}
+    <input type="file" id="ink_photo" name="ink_photo" accept=".png,.jpg,.jpeg,.gif,.webp,.webm">
+    <p class="field-hint">PNG, JPG, GIF, WEBP, or WEBM. Uploading a new file replaces the current one.</p>
+  </div>
+
+  <div class="field-row">
+    <label for="handwriting_sample">Handwriting sample <span class="optional">(optional)</span></label>
+    {% if ink and ink['handwriting_sample_path'] %}
+    <div class="current-sample">
+      {% if ink['handwriting_sample_path']|is_video %}
+      <video class="current-sample-media" controls>
+        <source src="{{ url_for('static', filename=ink['handwriting_sample_path']) }}">
+      </video>
+      {% else %}
+      <img src="{{ url_for('static', filename=ink['handwriting_sample_path']) }}" alt="Current handwriting sample">
+      {% endif %}
+      <div class="checkbox-item">
+        <input type="checkbox" id="remove_sample" name="remove_sample">
+        <label for="remove_sample">Remove current sample</label>
+      </div>
+    </div>
+    {% endif %}
+    <input type="file" id="handwriting_sample" name="handwriting_sample" accept=".png,.jpg,.jpeg,.gif,.webp,.webm">
+    <p class="field-hint">PNG, JPG, GIF, WEBP, or WEBM. Uploading a new file replaces the current one.</p>
+  </div>
+
+  <div class="field-row">
+    <label for="notes">Notes <span class="optional">(optional)</span></label>
+    <textarea id="notes" name="notes" placeholder="Dry time, paper behavior, scent, anything worth remembering...">{{ ink['notes'] if ink else '' }}</textarea>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">{{ 'Save changes' if ink else 'Add ink' }}</button>
+    <a href="{{ url_for('inks_list') }}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+{% endblock %}

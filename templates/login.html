@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Log in · Wakil Nibs{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Editing access</span>
+    <h1>Log in</h1>
+    <p class="subtitle">Enter the password to add, edit, or delete pens and inks.</p>
+  </div>
+</div>
+
+<form method="post" class="card form-card" style="max-width:420px;">
+  <input type="hidden" name="next" value="{{ next_url }}">
+  <div class="field-row">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required autofocus>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Log in</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Back to dashboard</a>
+  </div>
+</form>
+{% endblock %}

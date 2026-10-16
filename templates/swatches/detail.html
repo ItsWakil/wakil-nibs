@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ink_bottle %}
+{% block title %}{{ ink['name'] }} swatch · Wakil Nibs{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/swatches.css') }}?v={{ asset_version() }}">{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('swatches.gallery') }}" class="back-link">← Back to Swatches</a>
+
+<div class="page-head">
+  <div>
+    <span class="pen-brand-tag">{{ ink['brand'] }}</span>
+    <h1>{{ ink['name'] }}</h1>
+  </div>
+  <a href="{{ url_for('ink_detail', ink_id=ink['id']) }}" class="btn btn-outline">Ink details</a>
+</div>
+
+<div class="sw-detail">
+  <section aria-label="Swatch photo">
+    <div class="sw-photo">
+      <img src="{{ url_for('static', filename=swatch['photo_path']) }}" alt="Swatch of {{ ink['brand'] }} {{ ink['name'] }}">
+    </div>
+    <div class="sw-photo-meta">
+      {% if swatch['wb_r'] %}
+      <span class="sw-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>White balance corrected from the paper</span>
+      {% endif %}
+      <span class="sw-muted">{{ swatch['paper'] or 'Paper not noted' }} · added {{ swatch['created_at'][:10] }}</span>
+    </div>
+    {% if swatches|length > 1 %}
+    <div class="sw-thumbs" aria-label="Other photos of this ink">
+      {% for s in swatches %}
+      <a href="{{ url_for('swatches.ink_detail', ink_id=ink['id'], swatch=s['id']) }}" {% if s['id'] == swatch['id'] %}aria-current="true"{% endif %}>
+        <img src="{{ url_for('static', filename=s['photo_path']) }}" alt="Swatch photo {{ loop.index }}" loading="lazy">
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="colors-h">
+    <div class="card sw-panel" style="gap: 14px">
+      <div class="toolbar-row" style="margin: 0">
+        <h2 id="colors-h">Extracted colors</h2>
+        <span class="sw-muted">{{ colors|length }} clusters</span>
+      </div>
+      <div class="sw-share" aria-hidden="true">
+        {% for c in colors %}<div style="background: {{ c.hex }}; flex: {{ c.share }}"></div>{% endfor %}
+      </div>
+      {% for c in colors %}
+      <div class="sw-color-row">
+        <i style="background: {{ c.hex }}"></i>
+        <div>
+          <b>{{ c.role }}</b>
+          <span class="sw-mono">{{ c.hex }} · L {{ c.lab_l|round|int }} a {{ c.lab_a|round|int }} b {{ c.lab_b|round|int }}</span>
+        </div>
+        <span class="sw-mono">{{ (c.share * 100)|round|int }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <dl class="sw-facts">
+      <div><dt>Shading (measured)</dt><dd>{{ shading }}</dd></div>
+      <div><dt>Ink color on file</dt><dd class="sw-mono" style="color: var(--text-primary)">{{ (ink['color_hex'] or '—')|upper }}</dd></div>
+      <div><dt>Photos</dt><dd>{{ swatches|length }}</dd></div>
+    </dl>
+
+    {% if swatch['notes'] %}
+    <div class="detail-section" style="margin-top: 0">
+      <h2>Notes</h2>
+      <p style="white-space: pre-line">{{ swatch['notes'] }}</p>
+    </div>
+    {% endif %}
+
+    {% if similar %}
+    <div class="detail-section">
+      <h2>Similar inks you own</h2>
+      <div class="sw-list">
+        {% for s in similar %}
+        <a class="sw-item" href="{{ url_for('swatches.ink_detail', ink_id=s.ink_id) if s.measured else url_for('ink_detail', ink_id=s.ink_id) }}">
+          {{ ink_bottle(s.hex) }}
+          <span class="sw-item-name"><b>{{ s.name }}</b><span>{{ s.brand }}{% if not s.measured %} · <span class="sw-est" title="No swatch photo yet, so this uses the color from the ink form">est.</span>{% endif %}</span></span>
+          <span class="sw-de">ΔE {{ s.delta_e }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if logged_in %}
+    <div class="sw-actions">
+      <a class="btn btn-primary" href="{{ url_for('swatches.new_swatch', ink=ink['id']) }}">+ Add another photo</a>
+      {% if not color_matches %}
+      <form method="post" action="{{ url_for('swatches.use_color', swatch_id=swatch['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline" type="submit" title="Use the measured color for this ink's bottle icon everywhere">Use as ink color</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('swatches.reextract', swatch_id=swatch['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline" type="submit">Re-extract colors</button>
+      </form>
+      <form method="post" action="{{ url_for('swatches.delete_swatch', swatch_id=swatch['id']) }}" onsubmit="return confirm('Delete this swatch photo?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger" type="submit">Delete photo</button>
+      </form>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

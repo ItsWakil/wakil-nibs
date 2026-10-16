@@ -77,6 +77,24 @@ nginx can't run Python, it just forwards to gunicorn.
 - Use a long random password. It's a single shared password with no 2FA.
 - Found a hole? Open an issue, or use GitHub's private security advisory if it's serious.
 
+## Swatches
+
+The Swatches page measures ink colors from photos. Shoot a swatch on white
+paper, drag a box around the card, and it corrects the photo's white balance
+against the paper, then pulls out the ink's dominant, pooling and lighter
+shades. From there you can browse the collection by hue, filter by sheen,
+shimmer or what's inked, and search by color: pick a color, or tap a spot on
+any photo, and it lists your closest inks by CIEDE2000 distance (under 1 is
+indistinguishable, 10 or more is a different ink).
+
+Inks without a swatch photo still show up, using the color from the ink form.
+"Use as ink color" on a swatch copies the measured color onto the ink, so its
+bottle icon matches everywhere.
+
+It needs Pillow and numpy (both in `requirements.txt`). Photos are stored in
+`static/uploads/swatches/`. There's also a small JSON endpoint:
+`/swatches/api/match?color=1F5FA8&limit=5`.
+
 ## Your data
 
 Two things hold everything: `pentracker.db` and the `static/uploads/` folder.
@@ -84,8 +102,9 @@ Copy both to back up. Neither is tracked by git.
 
 ## Updating
 
-Pull or copy the new code over, don't touch the database or uploads, and restart
-the service. Gunicorn caches templates, so a restart is needed for any change.
+Pull or copy the new code over, don't touch the database or uploads, run
+`venv/bin/pip install -r requirements.txt` in case dependencies changed, and
+restart the service. Gunicorn caches templates, so a restart is needed for any change.
 If the page comes up unstyled, `static/css/style.css` didn't get copied (nginx
 serves it straight from disk).
 

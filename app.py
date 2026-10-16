@@ -14,6 +14,7 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import database as db
+from swatches import init_swatches, delete_photos_for_ink, swatch_summary
 
 app = Flask(__name__)
 
@@ -62,6 +63,9 @@ VIDEO_EXTENSIONS = {"webm"}
 
 # 25 MB upload cap (Flask returns a 413).
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
+
+# Swatch gallery (/swatches). Photos go in static/uploads/swatches/.
+init_swatches(app, db.DB_PATH, STATIC_DIR)
 
 
 def _allowed_upload(filename):
@@ -482,7 +486,8 @@ def ink_detail(ink_id):
         flash("That ink doesn't exist.", "error")
         return redirect(url_for("inks_list"))
     pens_using = db.get_pens_by_ink(ink_id)
-    return render_template("ink_detail.html", ink=ink, pens_using=pens_using)
+    return render_template("ink_detail.html", ink=ink, pens_using=pens_using,
+                           swatch=swatch_summary(ink_id))
 
 
 @app.route("/inks/new", methods=["GET", "POST"])
@@ -516,6 +521,7 @@ def ink_delete(ink_id):
     if ink:
         _delete_upload(ink["handwriting_sample_path"])
         _delete_upload(ink["photo_path"])
+        delete_photos_for_ink(ink_id)  # swatch rows go by cascade, files don't
     db.delete_ink(ink_id)
     flash("Ink removed.", "success")
     return redirect(url_for("inks_list"))

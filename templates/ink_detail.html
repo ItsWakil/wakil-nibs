@@ -91,6 +91,20 @@
     {% endif %}
 
     <div class="detail-section">
+      <h2>Swatch colors</h2>
+      {% if swatch %}
+      <a href="{{ url_for('swatches.ink_detail', ink_id=ink['id']) }}" style="display:flex; height:28px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border-subtle);" title="See the swatch analysis">
+        {% for c in swatch.colors %}<span style="flex: {{ c.share }}; background: {{ c.hex }};"></span>{% endfor %}
+      </a>
+      <a href="{{ url_for('swatches.ink_detail', ink_id=ink['id']) }}" class="sample-link">Measured from {{ swatch.count }} swatch photo{{ '' if swatch.count == 1 else 's' }} ↗</a>
+      {% elif logged_in %}
+      <a href="{{ url_for('swatches.new_swatch', ink=ink['id']) }}" class="btn btn-outline btn-small">+ Add a swatch photo</a>
+      {% else %}
+      <p style="color:var(--text-secondary);">No swatch photo yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="detail-section">
       <h2>Currently inked in</h2>
       {% if pens_using %}
       <div class="empty-pen-list">

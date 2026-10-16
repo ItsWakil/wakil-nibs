@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ink_bottle %}
+{% block title %}Swatches · Wakil Nibs{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/swatches.css') }}?v={{ asset_version() }}">{% endblock %}
+
+{% block content %}
+<div class="page-head" data-gallery-url="{{ url_for('swatches.gallery') }}" data-sort="{{ sort }}">
+  <div>
+    <span class="eyebrow">The colors</span>
+    <h1>Swatches</h1>
+    <p class="subtitle">{{ measured }} of {{ total }} inks measured from swatch photos. Search your collection by color.</p>
+  </div>
+  {% if logged_in %}
+  <a href="{{ url_for('swatches.new_swatch') }}" class="btn btn-primary">+ Add a swatch</a>
+  {% endif %}
+</div>
+
+{% if not total %}
+<div class="card empty-state">
+  <h3>No inks yet</h3>
+  <p>Add an ink first, then photograph a swatch of it.</p>
+  {% if logged_in %}<a href="{{ url_for('ink_new') }}" class="btn btn-primary">+ Add an ink</a>{% endif %}
+</div>
+{% else %}
+
+<div class="sw-row">
+  <section class="card sw-panel sw-find" aria-labelledby="find-h">
+    <h2 id="find-h">Find by color</h2>
+
+    <div class="sw-target">
+      <div class="sw-target-chip" style="background: {{ target.hex }}"></div>
+      <div>
+        <strong>{{ target.label }}</strong>
+        <span class="sw-mono">{{ target.hex }}</span>
+      </div>
+    </div>
+
+    <div class="sw-chips" role="group" aria-label="Pick a target color">
+      {% for name, hex in targets %}
+      <a class="sw-chip" href="{{ qs(color=hex[1:]) }}" style="background: {{ hex }}" aria-label="{{ name }}"
+         {% if hex == target.hex %}aria-current="true"{% endif %}></a>
+      {% endfor %}
+      <label class="sw-picker" title="Any color">
+        <span class="sw-sr">Pick any color</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-2 2-6-6zM12 6l-8 8v4h4l8-8"/></svg>
+        <input type="color" value="{{ target.hex }}" data-color-input>
+      </label>
+    </div>
+
+    <label class="sw-photo-pick">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+      Or match a color from a photo
+      <input type="file" accept="image/*" data-photo-pick>
+    </label>
+    <div class="sw-pickcanvas" data-pick-wrap>
+      <canvas data-pick-canvas aria-label="Tap the photo to pick a color"></canvas>
+      <span class="sw-muted">Tap the ink to search for that color.</span>
+    </div>
+
+    <div>
+      <span class="sw-label">Closest in your collection</span>
+      <div class="sw-list">
+        {% for m in matches %}
+        <a class="sw-item" href="{{ url_for('swatches.ink_detail', ink_id=m.ink_id) if m.measured else url_for('ink_detail', ink_id=m.ink_id) }}">
+          {{ ink_bottle(m.hex) }}
+          <span class="sw-item-name">
+            <b>{{ m.name }}</b>
+            <span>{{ m.brand }}{% if not m.measured %} · <span class="sw-est" title="No swatch photo yet, so this uses the color from the ink form">est.</span>{% endif %}</span>
+          </span>
+          <span class="sw-bar" aria-hidden="true"><span style="width: {{ m.closeness }}%"></span></span>
+          <span class="sw-de">ΔE {{ m.delta_e }}</span>
+        </a>
+        {% else %}
+        <p class="sw-muted">No inks match these filters.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="card sw-panel sw-spec" aria-labelledby="spec-h">
+    <div class="toolbar-row" style="margin: 0">
+      <h2 id="spec-h">Your collection, by hue</h2>
+      <span class="sw-muted">Each band is one ink</span>
+    </div>
+    <div class="sw-spectrum">
+      {% for ink in spectrum %}
+      <a href="{{ url_for('swatches.ink_detail', ink_id=ink.ink_id) if ink.measured else url_for('ink_detail', ink_id=ink.ink_id) }}"
+         title="{{ ink.brand }} {{ ink.name }}" style="background: {{ ink.hex }}">
+        <span class="sw-sr">{{ ink.brand }} {{ ink.name }}</span>
+        {% if ink.shades %}<span class="sw-tones">{% for s in ink.shades %}<span style="background: {{ s }}"></span>{% endfor %}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    <div class="sw-stats">
+      <div class="sw-stat"><b>{{ total }}</b><span>Inks</span></div>
+      <div class="sw-stat"><b>{{ measured }}</b><span>Measured from photos</span></div>
+    </div>
+  </section>
+</div>
+
+<div class="toolbar-row">
+  <div class="sw-filters" role="group" aria-label="Filter">
+    {% for f in filters %}
+    <a class="sw-filter" href="{{ f.url }}" aria-pressed="{{ 'true' if f.on else 'false' }}">{{ f.label }}</a>
+    {% endfor %}
+  </div>
+  <div class="view-toggle">
+    <a href="{{ qs(sort='spectrum') }}" class="view-toggle-btn{{ ' view-toggle-active' if sort == 'spectrum' }}">Spectrum</a>
+    <a href="{{ qs(sort='brand') }}" class="view-toggle-btn{{ ' view-toggle-active' if sort == 'brand' }}">Brand</a>
+  </div>
+</div>
+
+<div class="sw-grid">
+  {% for ink in grid %}
+  <a class="card sw-card" href="{{ url_for('swatches.ink_detail', ink_id=ink.ink_id) if ink.measured else url_for('ink_detail', ink_id=ink.ink_id) }}">
+    <div class="sw-card-main" style="background: {{ ink.hex }}"></div>
+    <div class="sw-tones">
+      {% for s in ink.shades %}<span style="background: {{ s }}"></span>{% else %}<span style="background: {{ ink.hex }}"></span>{% endfor %}
+    </div>
+    <div class="sw-card-body">
+      <b>{{ ink.name }}</b>
+      <span class="sw-muted">{{ ink.brand }}</span>
+      <span class="sw-mono">{{ ink.hex }}{% if not ink.measured %} · <span class="sw-est" title="No swatch photo yet, so this uses the color from the ink form">est.</span>{% endif %}</span>
+      {% if ink.sheen or ink.shimmer or ink.inked %}
+      <div class="badge-row">
+        {% if ink.inked %}<span class="badge">Inked</span>{% endif %}
+        {% if ink.sheen %}<span class="badge badge-a">Sheen</span>{% endif %}
+        {% if ink.shimmer %}<span class="badge badge-c">Shimmer</span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% else %}
+  <div class="card empty-state" style="grid-column: 1 / -1">
+    <h3>Nothing matches</h3>
+    <p>No inks have all of those properties.</p>
+    <a href="{{ qs(f=[]) }}" class="btn btn-outline">Clear filters</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/swatches.js') }}?v={{ asset_version() }}" defer></script>
+{% endblock %}

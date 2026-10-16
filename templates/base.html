@@ -23,6 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version() }}">
+{% block head %}{% endblock %}
 </head>
 <body>
 
@@ -33,6 +34,7 @@
     <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
     <a href="{{ url_for('pens_list') }}" class="{{ 'active' if request.endpoint in ['pens_list','pen_new','pen_edit','pen_detail'] }}">Pens</a>
     <a href="{{ url_for('inks_list') }}" class="{{ 'active' if request.endpoint in ['inks_list','ink_new','ink_edit','ink_detail'] }}">Inks</a>
+    <a href="{{ url_for('swatches.gallery') }}" class="{{ 'active' if request.blueprint == 'swatches' }}">Swatches</a>
     <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">🌙</button>
     {% if logged_in %}
     <form method="post" action="{{ url_for('logout') }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
